@@ -1,24 +1,59 @@
 <!doctype html>
 <html>
     <head>
-        <title>Drive Photo Gallery</title>
-        <style>
-            img {
-                max-width: 200px;
-                margin: 10px;
-                display: block;
-            }
-            .gallery {
-                display: flex;
-                flex-wrap: wrap;
-            }
-            .gallery-item {
-                margin: 10px;
-                text-align: center;
-            }
-        </style>
+        <title>{{ title }}</title>
+        <link
+            rel="stylesheet"
+            href="{{ url_for('static', filename='style.css') }}"
+        />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
     </head>
     <body>
+        <script>
+            function layout() {
+                const isMobile =
+                    window.matchMedia("(max-width: 600px)").matches;
+
+                document.querySelectorAll(".gallery-item").forEach((item) => {
+                    const img = item.querySelector("img");
+                    if (!img) return;
+
+                    if (isMobile) {
+                        // On mobile, reset any previously set width
+                        item.style.width = "";
+                        return;
+                    }
+
+                    const setWidth = () => {
+                        item.style.width = img.offsetWidth + "px";
+                    };
+
+                    if (img.complete) {
+                        setWidth();
+                    } else {
+                        img.addEventListener("load", setWidth, { once: true });
+                    }
+                });
+            }
+
+            document.addEventListener("DOMContentLoaded", layout);
+            window.addEventListener("resize", layout);
+        </script>
+
+        <h1>
+            {{ title }} {% if ig_link %}
+            <a href="{{ ig_link }}" target="_blank" class="ig-link">
+                <img
+                    src="{{ url_for('static', filename='ig.svg') }}"
+                    alt="Instagram"
+                    width="30"
+                    height="30"
+                />
+            </a>
+            {% endif %}
+        </h1>
+
+        <!-- -->
         {% for date in dates %}
         <h2>{{ date }}</h2>
         <div class="gallery">
@@ -31,6 +66,7 @@
                     <img
                         src="{{ url_for('serve_thumbnail', filename=f.thumbnail.split('/')[-1]) }}"
                         alt="{{ f.name }}"
+                        loading="lazy"
                     />
                 </a>
                 {% if f.description %}
@@ -39,6 +75,8 @@
             </div>
             {% endfor %}
         </div>
-        {% endfor %}
+        {% endfor %} {% if dates|length == 0 %}
+        <p>No photos yet.</p>
+        {% endif %}
     </body>
 </html>

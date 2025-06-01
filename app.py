@@ -5,7 +5,7 @@ load_dotenv()
 
 import threading
 import time
-from flask import Flask, render_template, send_from_directory
+from flask import Flask, render_template, make_response, send_file
 import requests
 from datetime import datetime
 from collections import defaultdict
@@ -19,8 +19,10 @@ GDRIVE_FOLDER = os.environ["GDRIVE_FOLDER"]
 GAPI_KEY = os.environ["GAPI_KEY"]
 PORT = int(os.environ.get("PORT", 5000))
 THUMBNAIL_DIR = "thumbnails"
-DB_FILE = "files.db"
+DB_FILE = "data/sqlite.db"
 ISO_DATE_REGEX = re.compile(r"^\d{4}-\d{2}-\d{2}")
+TITLE = os.environ.get("TITLE", "Gallery")
+IG_LINK = os.environ.get("IG_LINK", None)
 
 # Setup
 os.makedirs(THUMBNAIL_DIR, exist_ok=True)
@@ -28,6 +30,9 @@ app = Flask(__name__)
 
 # Initialize DB
 def init_db():
+    # Create dir if not exists
+    os.makedirs(os.path.dirname(DB_FILE), exist_ok=True)
+
     with sqlite3.connect(DB_FILE) as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS files (
@@ -62,7 +67,7 @@ def download_and_create_thumbnail(file_id):
     response = requests.get(url)
     response.raise_for_status()
     img = Image.open(BytesIO(response.content))
-    img.thumbnail((200, 200))
+    img.thumbnail((400, 400))
     path = os.path.join(THUMBNAIL_DIR, f"{file_id}.jpg")
     img.save(path, format="JPEG")
     return path
@@ -82,16 +87,28 @@ def save_files_periodically():
                     date_match = ISO_DATE_REGEX.match(f["name"])
                     date = date_match.group(0) if date_match else f["createdTime"][:10]
 
-                    cur.execute("SELECT 1 FROM files WHERE id = ?", (f["id"],))
-                    exists = cur.fetchone()
+                    cur.execute("SELECT description FROM files WHERE id = ?", (f["id"],))
+                    row = cur.fetchone()
 
-                    if not exists:
+                    if row is None:
+                        # File not in DB — insert new with thumbnail
                         thumb_path = download_and_create_thumbnail(f["id"])
                         cur.execute("""
-                            INSERT OR REPLACE INTO files (id, name, description, date, thumbnail)
+                            INSERT INTO files (id, name, description, date, thumbnail)
                             VALUES (?, ?, ?, ?, ?)
                         """, (f["id"], f["name"], f.get("description", ""), date, thumb_path))
-                        conn.commit()
+                    else:
+                        # File exists — update description if changed
+                        existing_description = row[0] or ""
+                        new_description = f.get("description", "")
+                        if existing_description != new_description:
+                            cur.execute("""
+                                UPDATE files
+                                SET name = ?, description = ?, date = ?
+                                WHERE id = ?
+                            """, (f["name"], new_description, date, f["id"]))
+
+                    conn.commit()
 
                 # Delete removed files
                 cur.execute("SELECT id, thumbnail FROM files")
@@ -125,18 +142,20 @@ def gallery():
         })
 
     sorted_dates = sorted(grouped.keys(), reverse=True)
-    return render_template("gallery.html", grouped=grouped, dates=sorted_dates)
+    return render_template("gallery.html",
+        grouped=grouped, dates=sorted_dates, title=TITLE, ig_link=IG_LINK)
 
-# Route: Serve thumbnail
 @app.route("/thumbnails/<filename>")
 def serve_thumbnail(filename):
-    return send_from_directory(THUMBNAIL_DIR, filename)
+    path = os.path.join(THUMBNAIL_DIR, filename)
+    if not os.path.exists(path):
+        return "Not Found", 404
 
-# Startup
-if __name__ == "__main__":
-    init_db()
-    thread = threading.Thread(target=save_files_periodically, daemon=True)
-    thread.start()
+    response = make_response(send_file(path))
+    response.headers["Cache-Control"] = "public, max-age=86400, stale-while-revalidate=604800"
+    return response
 
-    print(f"Starting server at http://localhost:{PORT}")
-    app.run(debug=True, port=PORT)
+init_db()
+
+thread = threading.Thread(target=save_files_periodically, daemon=True)
+thread.start()
