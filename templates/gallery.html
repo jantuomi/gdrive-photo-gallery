@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Drive Photo Gallery</title>
+        <style>
+            img {
+                max-width: 200px;
+                margin: 10px;
+                display: block;
+            }
+            .gallery {
+                display: flex;
+                flex-wrap: wrap;
+            }
+            .gallery-item {
+                margin: 10px;
+                text-align: center;
+            }
+        </style>
+    </head>
+    <body>
+        {% for date in dates %}
+        <h2>{{ date }}</h2>
+        <div class="gallery">
+            {% for f in grouped[date] %}
+            <div class="gallery-item">
+                <a
+                    href="https://drive.google.com/file/d/{{ f.id }}/view"
+                    target="_blank"
+                >
+                    <img
+                        src="{{ url_for('serve_thumbnail', filename=f.thumbnail.split('/')[-1]) }}"
+                        alt="{{ f.name }}"
+                    />
+                </a>
+                {% if f.description %}
+                <p>{{ f.description }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </body>
+</html>

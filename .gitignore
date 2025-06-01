@@ -1,0 +1,8 @@
+sa-key.json
+.env
+.venv
+__pycache__
+*.pyc
+*.log
+*.db
+thumbnails/
