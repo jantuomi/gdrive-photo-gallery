@@ -1,16 +1,16 @@
-from dotenv import load_dotenv
 import os
-
-load_dotenv()
-
 import threading
 import time
-from flask import Flask, render_template, make_response, send_file
 import requests
-from datetime import datetime
-from collections import defaultdict
 import re
 import sqlite3
+
+from dotenv import load_dotenv
+load_dotenv()
+
+from flask import Flask, render_template, make_response, send_file
+from flask_compress import Compress
+from collections import defaultdict
 from PIL import Image
 from io import BytesIO
 
@@ -27,6 +27,7 @@ IG_LINK = os.environ.get("IG_LINK", None)
 # Setup
 os.makedirs(THUMBNAIL_DIR, exist_ok=True)
 app = Flask(__name__)
+Compress(app)
 
 # Initialize DB
 def init_db():
