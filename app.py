@@ -67,6 +67,11 @@ def download_and_create_thumbnail(file_id):
     response = requests.get(url)
     response.raise_for_status()
     img = Image.open(BytesIO(response.content))
+
+    # Convert to RGB if image has alpha channel (RGBA or P)
+    if img.mode in ("RGBA", "P"):
+        img = img.convert("RGB")
+
     img.thumbnail((400, 400))
     path = os.path.join(THUMBNAIL_DIR, f"{file_id}.jpg")
     img.save(path, format="JPEG")
