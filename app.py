@@ -1,6 +1,7 @@
 import os
 import threading
 import time
+from flask.helpers import url_for
 import requests
 import re
 import sqlite3
@@ -21,8 +22,9 @@ PORT = int(os.environ.get("PORT", 5000))
 THUMBNAIL_DIR = "thumbnails"
 DB_FILE = "data/sqlite.db"
 ISO_DATE_REGEX = re.compile(r"^\d{4}-\d{2}-\d{2}")
-TITLE = os.environ.get("TITLE", "Gallery")
+AUTHOR = os.environ["AUTHOR"]
 IG_LINK = os.environ.get("IG_LINK", None)
+BASE_URL = os.environ["BASE_URL"]
 
 # Setup
 os.makedirs(THUMBNAIL_DIR, exist_ok=True)
@@ -148,8 +150,21 @@ def gallery():
         })
 
     sorted_dates = sorted(grouped.keys(), reverse=True)
+
+    if len(files) > 0:
+        cover_img_path = url_for("serve_thumbnail", filename=files[0][4].split('/')[-1])
+        cover_img_url = BASE_URL + cover_img_path
+    else:
+        cover_img_url = None
+
     return render_template("gallery.html",
-        grouped=grouped, dates=sorted_dates, title=TITLE, ig_link=IG_LINK)
+        grouped=grouped,
+        dates=sorted_dates,
+        author=AUTHOR,
+        ig_link=IG_LINK,
+        cover_img_url=cover_img_url,
+        base_url=BASE_URL,
+    )
 
 @app.route("/thumbnails/<filename>")
 def serve_thumbnail(filename):
