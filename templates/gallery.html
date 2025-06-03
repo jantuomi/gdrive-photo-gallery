@@ -2,10 +2,6 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <link
-            rel="stylesheet"
-            href="{{ url_for('static', filename='style.css') }}"
-        />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta
             name="description"
@@ -21,6 +17,13 @@
         <meta property="og:image" content="{{ cover_img_url }}" />
         <meta property="og:url" content="{{ base_url }}" />
         <meta property="og:type" content="website" />
+
+        <title>Leo Lalla</title>
+        <link
+            rel="stylesheet"
+            href="{{ url_for('static', filename='style.css') }}"
+        />
+
         <script>
             function layout() {
                 const isMobile =
@@ -30,8 +33,15 @@
                     const img = item.querySelector("img");
                     if (!img) return;
 
+                    const cleanup = () => img.classList.remove("loading");
+
+                    if (img.complete) {
+                        cleanup();
+                    } else {
+                        img.addEventListener("load", cleanup, { once: true });
+                    }
+
                     if (isMobile) {
-                        // On mobile, reset any previously set width
                         item.style.width = "";
                         return;
                     }
@@ -52,6 +62,7 @@
             window.addEventListener("resize", layout);
         </script>
     </head>
+
     <body>
         <h1>
             {{ author }} {% if ig_link %}
@@ -66,7 +77,6 @@
             {% endif %}
         </h1>
 
-        <!-- -->
         {% for date in dates %}
         <h2>{{ date }}</h2>
         <div class="gallery">
@@ -78,8 +88,8 @@
                 >
                     <img
                         src="{{ url_for('serve_thumbnail', filename=f.thumbnail.split('/')[-1]) }}"
-                        alt="{{ f.name }}"
                         loading="lazy"
+                        class="loading"
                     />
                 </a>
                 {% if f.description %}

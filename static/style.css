@@ -3,8 +3,8 @@ body {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     background-color: #121212;
     color: #e0e0e0;
-    margin: auto;
     max-width: 1000px;
+    margin: auto;
     padding: 20px;
 }
 
@@ -22,7 +22,7 @@ h2 {
     padding-bottom: 8px;
 }
 
-/* Flexible, wrap-aligned image gallery */
+/* Flex-based gallery layout */
 .gallery {
     display: flex;
     flex-wrap: wrap;
@@ -30,47 +30,63 @@ h2 {
     align-items: flex-start;
 }
 
-/* Gallery item constrains to image width */
+/* Each image container wraps to its image's width */
 .gallery-item {
     display: inline-block;
     margin: 0;
+    padding: 0;
     box-sizing: border-box;
     overflow: hidden;
     vertical-align: top;
 }
 
-/* Image: fixed height, natural width */
+/* Image styling with placeholder skeleton */
 .gallery-item img {
-    display: block;
     height: 200px;
     width: auto;
     max-width: 100vw;
     object-fit: cover;
+    display: block;
     transition: transform 0.2s ease-in-out;
 }
 
-/* Description: match image width */
+.gallery-item img.loading {
+    background: linear-gradient(90deg, #222 25%, #333 50%, #222 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    min-width: 200px;
+    min-height: 200px;
+}
+
+/* Shimmer animation for loading placeholder */
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* Description styling */
 .gallery-item p {
     margin: 8px 0 0;
     font-size: 0.85rem;
     color: #aaaaaa;
     line-height: 1.4;
-    max-width: 100%;
-    white-space: normal;
+    text-align: left;
     word-break: break-word;
-    overflow-wrap: break-word;
-    display: block;
+    max-width: 100%;
 }
 
-/* Hover effect */
-.gallery-item img:hover {
-    transform: scale(1.03);
-}
-
-/* Mobile: full width per row */
+/* Responsive layout for mobile */
 @media (max-width: 600px) {
     body {
         padding: 12px;
+    }
+
+    h1 {
+        font-size: 1.5rem;
     }
 
     h2 {
@@ -89,10 +105,16 @@ h2 {
     .gallery-item img {
         width: 100%;
         height: auto;
-        //max-height: 300px;
+        max-height: 300px;
     }
 
     .gallery-item p {
         padding: 0 8px 8px;
     }
+}
+
+/* Instagram icon link */
+.ig-link {
+    margin-left: 12px;
+    vertical-align: middle;
 }
