@@ -26,11 +26,6 @@ AUTHOR = os.environ["AUTHOR"]
 IG_LINK = os.environ.get("IG_LINK", None)
 BASE_URL = os.environ["BASE_URL"]
 
-# Setup
-os.makedirs(THUMBNAIL_DIR, exist_ok=True)
-app = Flask(__name__)
-Compress(app)
-
 # Initialize DB
 def init_db():
     # Create dir if not exists
@@ -46,6 +41,20 @@ def init_db():
                 thumbnail TEXT
             )
         """)
+
+def create_app() -> Flask:
+    init_db()
+
+    os.makedirs(THUMBNAIL_DIR, exist_ok=True)
+    thread = threading.Thread(target=save_files_periodically, daemon=True)
+    thread.start()
+
+    app = Flask(__name__)
+    Compress(app)
+    return app
+
+# Setup
+app = create_app()
 
 # Get image files from the given Google Drive folder (non-recursive)
 def list_drive_files(folder_id):
@@ -175,8 +184,3 @@ def serve_thumbnail(filename):
     response = make_response(send_file(path))
     response.headers["Cache-Control"] = "public, max-age=86400, stale-while-revalidate=604800"
     return response
-
-init_db()
-
-thread = threading.Thread(target=save_files_periodically, daemon=True)
-thread.start()
